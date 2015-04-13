@@ -5,8 +5,8 @@
     version="0.0.1">
     <name>RestartApp Plugin</name>
     <description>Kill Process and Restart activity</description>
-    <license>MIT</license>
-    <keywords>ACR122, phonegap plugin, android</keywords>
+    <license></license>
+    <keywords></keywords>
 
     <!-- android -->
     <platform name="android">
