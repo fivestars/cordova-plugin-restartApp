@@ -1,7 +1,11 @@
 package com.fivestars.mtab.plugin;
 
+import java.lang.System;
+
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.content.Intent;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
@@ -22,11 +26,6 @@ import org.apache.cordova.PluginResult;
 public class RestartAppPlugin extends CordovaPlugin {
 
     private static final String EXECUTE_RESTART = "RESTART_APPLICATION";
-
-    /*
-        JsonArray args = [string: package name]
-        package name will be used to build the intent to restart the application
-    */
    
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -58,7 +57,14 @@ public class RestartAppPlugin extends CordovaPlugin {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         cordovaActivity.finish();
-        appContext.startActivity(intent);
+
+        // Pending intent starts activity after 2 seconds
+        AlarmManager mgr = (AlarmManager)appContext.getSystemService(Context.ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 2000, PendingIntent.getActivity(appContext, 0, intent, 0));
+
+        // ToDo (bbil): Remove this once once cordova webviews are properly destroyed
+        // Either cordova must be upgraded or webviews manually destroyed
+        System.exit(2);
 
         return true;
     }
