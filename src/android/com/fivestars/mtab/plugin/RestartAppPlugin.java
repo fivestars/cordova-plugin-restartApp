@@ -26,11 +26,17 @@ import org.apache.cordova.PluginResult;
 public class RestartAppPlugin extends CordovaPlugin {
 
     private static final String EXECUTE_RESTART = "RESTART_APPLICATION";
+    private static final long DEFAULT_DELAY = 2000L;
    
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
         if (EXECUTE_RESTART.equals(action)) {
+            if (args.length() == 2) {
+                final long delay = args.getLong(0);
+                final boolean exit = args.getBoolean(1);
+                return restartApp(delay, exit);
+            }
             return restartApp();
         }
         
@@ -39,6 +45,11 @@ public class RestartAppPlugin extends CordovaPlugin {
     }
 
     private boolean restartApp() {
+        // use the default delay and exit the app by default
+        return restartApp(DEFAULT_DELAY, true);
+    }
+
+    private boolean restartApp(long delay, boolean exit) {
         Activity cordovaActivity = this.cordova.getActivity();
         Context appContext = cordovaActivity.getApplicationContext();
 
@@ -60,11 +71,13 @@ public class RestartAppPlugin extends CordovaPlugin {
 
         // Pending intent starts activity after 2 seconds
         AlarmManager mgr = (AlarmManager)appContext.getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 2000, PendingIntent.getActivity(appContext, 0, intent, 0));
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + delay, PendingIntent.getActivity(appContext, 0, intent, 0));
 
-        // ToDo (bbil): Remove this once once cordova webviews are properly destroyed
-        // Either cordova must be upgraded or webviews manually destroyed
-        System.exit(2);
+        if (exit) {
+            // ToDo (bbil): Remove this once once cordova webviews are properly destroyed
+            // Either cordova must be upgraded or webviews manually destroyed
+            System.exit(2);
+        }
 
         return true;
     }
