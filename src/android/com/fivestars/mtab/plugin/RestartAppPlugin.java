@@ -26,8 +26,11 @@ import org.apache.cordova.PluginResult;
 public class RestartAppPlugin extends CordovaPlugin {
 
     private static final String EXECUTE_RESTART = "RESTART_APPLICATION";
+    private static final String EXECUTE_CANCEL_PENDING_RESTART = "CANCEL_PENDING_RESTART";
     private static final long DEFAULT_DELAY = 2000L;
-   
+
+    private PendingIntent mPendingRestart;
+
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
@@ -38,8 +41,10 @@ public class RestartAppPlugin extends CordovaPlugin {
                 return restartApp(delay, exit);
             }
             return restartApp();
+        } else if (EXECUTE_CANCEL_PENDING_RESTART.equals(action)) {
+            return cancelPendingRestart();
         }
-        
+
         // the action doesn't exist
         return false;
     }
@@ -64,21 +69,35 @@ public class RestartAppPlugin extends CordovaPlugin {
             Log.d("RestartAppPlugin", "Launch Intent not found");
             return false;
         }
-        
+
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        cordovaActivity.finish();
-
+        mPendingRestart = PendingIntent.getActivity(appContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
         // Pending intent starts activity after 2 seconds
         AlarmManager mgr = (AlarmManager)appContext.getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + delay, PendingIntent.getActivity(appContext, 0, intent, 0));
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + delay, mPendingRestart);
 
         if (exit) {
             // ToDo (bbil): Remove this once once cordova webviews are properly destroyed
             // Either cordova must be upgraded or webviews manually destroyed
+            cordovaActivity.finish();
+
             System.exit(2);
         }
 
         return true;
+    }
+
+    private boolean cancelPendingRestart() {
+        boolean intentCancelled = false;
+        if (mPendingRestart != null) {
+            try {
+                mPendingRestart.cancel();
+                intentCancelled = true;
+            } catch (Exception e) {
+                Log.e("RestartAppPlugin", "Could not cancel pending restart", e);
+            }
+        }
+        return intentCancelled;
     }
 }
